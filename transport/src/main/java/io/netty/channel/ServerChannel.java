@@ -23,5 +23,5 @@ import io.netty.channel.socket.ServerSocketChannel;
  * a good example.
  */
 public interface ServerChannel extends Channel {
-    // This is a tag interface.
+    EventLoopGroup childEventLoopGroup();
 }
