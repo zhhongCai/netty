@@ -2279,7 +2279,7 @@ public class DnsNameResolverTest {
         try {
             newResolver().channelFactory(new ChannelFactory<DatagramChannel>() {
                 @Override
-                public DatagramChannel newChannel() {
+                public DatagramChannel newChannel(EventLoop eventLoop) {
                     throw exception;
                 }
             }).build();
