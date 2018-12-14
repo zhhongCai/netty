@@ -54,18 +54,8 @@ public abstract class AbstractEpollServerChannel extends AbstractEpollChannel im
     }
 
     @Override
-    public EpollChannelConfig config() {
-        return null;
-    }
-
-    @Override
     public ChannelMetadata metadata() {
         return METADATA;
-    }
-
-    @Override
-    protected boolean isCompatible(EventLoop loop) {
-        return loop instanceof EpollEventLoop;
     }
 
     @Override
