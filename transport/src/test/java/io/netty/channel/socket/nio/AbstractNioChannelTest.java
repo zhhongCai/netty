@@ -18,8 +18,9 @@ package io.netty.channel.socket.nio;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.MultithreadEventLoopGroup;
 import io.netty.channel.nio.AbstractNioChannel;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.nio.NioHandler;
 import io.netty.util.concurrent.AbstractEventExecutor;
 import io.netty.util.concurrent.Future;
 import org.junit.Test;
@@ -42,7 +43,7 @@ public abstract class AbstractNioChannelTest<T extends AbstractNioChannel> {
 
     @Test
     public void testNioChannelOption() throws IOException {
-        NioEventLoopGroup eventLoopGroup = new NioEventLoopGroup(1);
+        EventLoopGroup eventLoopGroup = new MultithreadEventLoopGroup(1, NioHandler.newFactory());
         T channel = newNioChannel(eventLoopGroup);
         try {
             NetworkChannel jdkChannel = jdkChannel(channel);
@@ -65,7 +66,7 @@ public abstract class AbstractNioChannelTest<T extends AbstractNioChannel> {
 
     @Test
     public void testInvalidNioChannelOption() {
-        NioEventLoopGroup eventLoopGroup = new NioEventLoopGroup(1);
+        EventLoopGroup eventLoopGroup = new MultithreadEventLoopGroup(1, NioHandler.newFactory());
         T channel = newNioChannel(eventLoopGroup);
         try {
             ChannelOption<?> option = NioChannelOption.of(newInvalidOption());
@@ -79,7 +80,7 @@ public abstract class AbstractNioChannelTest<T extends AbstractNioChannel> {
 
     @Test
     public void testGetOptions()  {
-        NioEventLoopGroup eventLoopGroup = new NioEventLoopGroup(1);
+        EventLoopGroup eventLoopGroup = new MultithreadEventLoopGroup(1, NioHandler.newFactory());
         T channel = newNioChannel(eventLoopGroup);
         try {
             channel.config().getOptions();
@@ -91,7 +92,7 @@ public abstract class AbstractNioChannelTest<T extends AbstractNioChannel> {
 
     @Test
     public void testWrapping() {
-        final NioEventLoopGroup eventLoopGroup = new NioEventLoopGroup(1);
+        EventLoopGroup eventLoopGroup = new MultithreadEventLoopGroup(1, NioHandler.newFactory());
         final EventLoop eventLoop = eventLoopGroup.next();
 
         class WrappedEventLoop extends AbstractEventExecutor implements EventLoop {

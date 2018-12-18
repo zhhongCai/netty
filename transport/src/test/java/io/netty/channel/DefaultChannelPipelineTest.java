@@ -26,7 +26,7 @@ import io.netty.channel.local.LocalEventLoopGroup;
 import io.netty.channel.local.LocalAddress;
 import io.netty.channel.local.LocalChannel;
 import io.netty.channel.local.LocalServerChannel;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.nio.NioHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.AbstractReferenceCounted;
 import io.netty.util.ReferenceCountUtil;
@@ -965,7 +965,7 @@ public class DefaultChannelPipelineTest {
 
     @Test(timeout = 3000)
     public void testAddInListenerNio() throws Throwable {
-        NioEventLoopGroup nioEventLoopGroup = new NioEventLoopGroup(1);
+        EventLoopGroup nioEventLoopGroup = new MultithreadEventLoopGroup(1, NioHandler.newFactory());
         try {
             testAddInListener(new NioSocketChannel(nioEventLoopGroup.next()));
         } finally {

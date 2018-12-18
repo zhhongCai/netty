@@ -17,12 +17,14 @@ package io.netty.channel;
 
 import io.netty.util.NettyRuntime;
 import io.netty.util.concurrent.DefaultThreadFactory;
-import io.netty.util.concurrent.EventExecutorChooserFactory;
 import io.netty.util.concurrent.MultithreadEventExecutorGroup;
+import io.netty.util.concurrent.RejectedExecutionHandler;
+import io.netty.util.concurrent.RejectedExecutionHandlers;
 import io.netty.util.internal.SystemPropertyUtil;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
+import java.util.Arrays;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 
@@ -30,11 +32,11 @@ import java.util.concurrent.ThreadFactory;
  * Abstract base class for {@link EventLoopGroup} implementations that handles their tasks with multiple threads at
  * the same time.
  */
-public abstract class MultithreadEventLoopGroup extends MultithreadEventExecutorGroup implements EventLoopGroup {
+public class MultithreadEventLoopGroup extends MultithreadEventExecutorGroup implements EventLoopGroup {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(MultithreadEventLoopGroup.class);
 
-    private static final int DEFAULT_EVENT_LOOP_THREADS;
+    public static final int DEFAULT_EVENT_LOOP_THREADS;
 
     static {
         DEFAULT_EVENT_LOOP_THREADS = Math.max(1, SystemPropertyUtil.getInt(
@@ -45,27 +47,38 @@ public abstract class MultithreadEventLoopGroup extends MultithreadEventExecutor
         }
     }
 
-    /**
-     * @see MultithreadEventExecutorGroup#MultithreadEventExecutorGroup(int, Executor, Object...)
-     */
-    protected MultithreadEventLoopGroup(int nThreads, Executor executor, Object... args) {
-        super(nThreads == 0 ? DEFAULT_EVENT_LOOP_THREADS : nThreads, executor, args);
+    public MultithreadEventLoopGroup(SingleThreadEventLoop.IoHandlerFactory ioHandlerFactory) {
+        this(0, (Executor) null, ioHandlerFactory);
     }
 
-    /**
-     * @see MultithreadEventExecutorGroup#MultithreadEventExecutorGroup(int, ThreadFactory, Object...)
-     */
-    protected MultithreadEventLoopGroup(int nThreads, ThreadFactory threadFactory, Object... args) {
-        super(nThreads == 0 ? DEFAULT_EVENT_LOOP_THREADS : nThreads, threadFactory, args);
+    public MultithreadEventLoopGroup(int nThreads, SingleThreadEventLoop.IoHandlerFactory ioHandlerFactory) {
+        this(nThreads, (Executor) null, ioHandlerFactory);
     }
 
-    /**
-     * @see MultithreadEventExecutorGroup#MultithreadEventExecutorGroup(int, Executor,
-     * EventExecutorChooserFactory, Object...)
-     */
-    protected MultithreadEventLoopGroup(int nThreads, Executor executor, EventExecutorChooserFactory chooserFactory,
-                                     Object... args) {
-        super(nThreads == 0 ? DEFAULT_EVENT_LOOP_THREADS : nThreads, executor, chooserFactory, args);
+    public MultithreadEventLoopGroup(int nThreads, Executor executor,
+                                     SingleThreadEventLoop.IoHandlerFactory ioHandlerFactory) {
+        super(nThreads == 0 ? DEFAULT_EVENT_LOOP_THREADS : nThreads, executor,
+                SingleThreadEventLoop.DEFAULT_MAX_PENDING_TASKS, RejectedExecutionHandlers.reject(), ioHandlerFactory);
+    }
+
+    public MultithreadEventLoopGroup(int nThreads, ThreadFactory threadFactory,
+                                     SingleThreadEventLoop.IoHandlerFactory ioHandlerFactory) {
+        this(nThreads == 0 ? DEFAULT_EVENT_LOOP_THREADS : nThreads, threadFactory,
+                SingleThreadEventLoop.DEFAULT_MAX_PENDING_TASKS, RejectedExecutionHandlers.reject(), ioHandlerFactory);
+    }
+
+    public MultithreadEventLoopGroup(int nThreads, Executor executor,  int maxPendingTasks,
+                                        RejectedExecutionHandler rejectedExecutionHandler,
+                                        SingleThreadEventLoop.IoHandlerFactory ioHandlerFactory) {
+        super(nThreads == 0 ? DEFAULT_EVENT_LOOP_THREADS : nThreads, executor,
+                maxPendingTasks, rejectedExecutionHandler, ioHandlerFactory);
+    }
+
+    public MultithreadEventLoopGroup(int nThreads, ThreadFactory threadFactory, int maxPendingTasks,
+                                     RejectedExecutionHandler rejectedExecutionHandler,
+                                     SingleThreadEventLoop.IoHandlerFactory ioHandlerFactory) {
+        super(nThreads == 0 ? DEFAULT_EVENT_LOOP_THREADS : nThreads, threadFactory,
+                maxPendingTasks, rejectedExecutionHandler, ioHandlerFactory);
     }
 
     @Override
@@ -74,10 +87,24 @@ public abstract class MultithreadEventLoopGroup extends MultithreadEventExecutor
     }
 
     @Override
-    public EventLoop next() {
+    public final EventLoop next() {
         return (EventLoop) super.next();
     }
 
     @Override
-    protected abstract EventLoop newChild(Executor executor, Object... args) throws Exception;
+    protected final EventLoop newChild(Executor executor, int maxPendingTasks,
+                                       RejectedExecutionHandler rejectedExecutionHandler, Object... args)
+            throws Exception {
+        return newChild(executor, maxPendingTasks, rejectedExecutionHandler,
+                ((SingleThreadEventLoop.IoHandlerFactory) args[0]).newHandler(),
+                Arrays.copyOfRange(args, 1, args.length));
+    }
+
+    protected EventLoop newChild(Executor executor, int maxPendingTasks,
+                                          RejectedExecutionHandler rejectedExecutionHandler,
+                                          SingleThreadEventLoop.IoHandler handler, Object... args) throws Exception {
+        assert args.length == 0;
+        return new SingleThreadEventLoop(this, executor, handler, maxPendingTasks, rejectedExecutionHandler);
+    }
+
 }

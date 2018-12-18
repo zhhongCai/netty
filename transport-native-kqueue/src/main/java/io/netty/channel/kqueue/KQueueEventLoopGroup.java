@@ -16,18 +16,19 @@
 package io.netty.channel.kqueue;
 
 import io.netty.channel.DefaultSelectStrategyFactory;
-import io.netty.channel.EventLoop;
 import io.netty.channel.MultithreadEventLoopGroup;
 import io.netty.channel.SelectStrategyFactory;
 import io.netty.util.concurrent.EventExecutor;
-import io.netty.util.concurrent.EventExecutorChooserFactory;
 import io.netty.util.concurrent.RejectedExecutionHandler;
-import io.netty.util.concurrent.RejectedExecutionHandlers;
 import io.netty.util.internal.UnstableApi;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 
+/**
+ * @deprecated use {@link MultithreadEventLoopGroup} together with {@link KQueueHandler}.
+ */
+@Deprecated
 @UnstableApi
 public final class KQueueEventLoopGroup extends MultithreadEventLoopGroup {
     {
@@ -98,22 +99,19 @@ public final class KQueueEventLoopGroup extends MultithreadEventLoopGroup {
     @Deprecated
     public KQueueEventLoopGroup(int nThreads, ThreadFactory threadFactory, int maxEventsAtOnce,
                                SelectStrategyFactory selectStrategyFactory) {
-        super(nThreads, threadFactory, maxEventsAtOnce, selectStrategyFactory, RejectedExecutionHandlers.reject());
+        super(nThreads, threadFactory, KQueueHandler.newFactory(maxEventsAtOnce, selectStrategyFactory));
     }
 
     public KQueueEventLoopGroup(int nThreads, Executor executor, SelectStrategyFactory selectStrategyFactory) {
-        super(nThreads, executor, 0, selectStrategyFactory, RejectedExecutionHandlers.reject());
+        super(nThreads, executor, KQueueHandler.newFactory(0, selectStrategyFactory));
     }
 
-    public KQueueEventLoopGroup(int nThreads, Executor executor, EventExecutorChooserFactory chooserFactory,
-                               SelectStrategyFactory selectStrategyFactory) {
-        super(nThreads, executor, chooserFactory, 0, selectStrategyFactory, RejectedExecutionHandlers.reject());
-    }
-
-    public KQueueEventLoopGroup(int nThreads, Executor executor, EventExecutorChooserFactory chooserFactory,
+    public KQueueEventLoopGroup(int nThreads, Executor executor,
                                SelectStrategyFactory selectStrategyFactory,
+                               int maxTasks,
                                RejectedExecutionHandler rejectedExecutionHandler) {
-        super(nThreads, executor, chooserFactory, 0, selectStrategyFactory, rejectedExecutionHandler);
+        super(nThreads, executor, maxTasks, rejectedExecutionHandler,
+                KQueueHandler.newFactory(0, selectStrategyFactory));
     }
 
     /**
@@ -122,13 +120,7 @@ public final class KQueueEventLoopGroup extends MultithreadEventLoopGroup {
      */
     public void setIoRatio(int ioRatio) {
         for (EventExecutor e: this) {
-            ((KQueueEventLoop) e).setIoRatio(ioRatio);
+            //((KQueueHandler) e).setIoRatio(ioRatio);
         }
-    }
-
-    @Override
-    protected EventLoop newChild(Executor executor, Object... args) throws Exception {
-        return new KQueueEventLoop(this, executor, (Integer) args[0],
-                ((SelectStrategyFactory) args[1]).newSelectStrategy(), (RejectedExecutionHandler) args[2]);
     }
 }

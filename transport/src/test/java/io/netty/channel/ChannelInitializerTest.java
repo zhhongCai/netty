@@ -18,13 +18,13 @@ package io.netty.channel;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.channel.local.LocalEventLoop;
 import io.netty.channel.local.LocalEventLoopGroup;
 import io.netty.channel.local.LocalAddress;
 import io.netty.channel.local.LocalChannel;
 import io.netty.channel.local.LocalServerChannel;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.SingleThreadEventExecutor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -266,7 +266,7 @@ public class ChannelInitializerTest {
         final AtomicReference<Throwable> errorRef = new AtomicReference<Throwable>();
         LocalAddress addr = new LocalAddress("test");
 
-        final EventExecutor executor = new LocalEventLoop() {
+        final EventExecutor executor = new SingleThreadEventExecutor() {
             private final ScheduledExecutorService execService = Executors.newSingleThreadScheduledExecutor();
 
             @Override

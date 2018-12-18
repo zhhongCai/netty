@@ -47,7 +47,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
         super(parent);
     }
 
-    protected static long nanoTime() {
+    public static long nanoTime() {
         return ScheduledFutureTask.nanoTime();
     }
 
@@ -138,6 +138,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
      * Returns {@code true} if a scheduled task is ready for processing.
      */
     protected final boolean hasScheduledTasks() {
+        assert inEventLoop();
         Queue<ScheduledFutureTask<?>> scheduledTaskQueue = this.scheduledTaskQueue;
         ScheduledFutureTask<?> scheduledTask = scheduledTaskQueue == null ? null : scheduledTaskQueue.peek();
         return scheduledTask != null && scheduledTask.deadlineNanos() <= nanoTime();
