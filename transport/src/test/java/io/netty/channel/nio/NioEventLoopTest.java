@@ -30,7 +30,6 @@ import io.netty.util.IntSupplier;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
 import org.hamcrest.core.IsInstanceOf;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -255,10 +254,10 @@ public class NioEventLoopTest extends AbstractEventLoopTest {
         }
     }
 
-    @Ignore
     @Test
     public void testRebuildSelectorOnIOException() throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
+        final CountDownLatch strategyLatch = new CountDownLatch(1);
         SelectStrategyFactory selectStrategyFactory = new SelectStrategyFactory() {
             @Override
             public SelectStrategy newSelectStrategy() {
@@ -268,6 +267,7 @@ public class NioEventLoopTest extends AbstractEventLoopTest {
 
                     @Override
                     public int calculateStrategy(IntSupplier selectSupplier, boolean hasTasks) throws Exception {
+                        strategyLatch.await();
                         if (!thrown) {
                             thrown = true;
                             throw new IOException();
@@ -285,13 +285,8 @@ public class NioEventLoopTest extends AbstractEventLoopTest {
         EventLoop loop = new SingleThreadEventLoop(null, new DefaultThreadFactory("ioPool"), nioHandler);
         try {
             Channel channel = new NioServerSocketChannel(loop, loop);
-
-            Selector selector = loop.submit(new Callable<Selector>() {
-                @Override
-                public Selector call() throws Exception {
-                    return nioHandler.unwrappedSelector();
-                }
-            }).syncUninterruptibly().getNow();
+            Selector selector = nioHandler.unwrappedSelector();
+            strategyLatch.countDown();
 
             channel.register().syncUninterruptibly();
 
