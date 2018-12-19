@@ -191,7 +191,7 @@ public class EpollSpliceTest {
             throw ch.exception.get();
         }
     }
-    @Ignore
+
     @Test
     public void spliceToFile() throws Throwable {
         EventLoopGroup group = new MultithreadEventLoopGroup(1, EpollHandler.newFactory());
