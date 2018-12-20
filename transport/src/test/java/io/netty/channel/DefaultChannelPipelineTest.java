@@ -38,6 +38,7 @@ import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
+import io.netty.util.concurrent.ScheduledFuture;
 import io.netty.util.concurrent.UnorderedThreadPoolEventExecutor;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -50,6 +51,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -1520,6 +1522,27 @@ public class DefaultChannelPipelineTest {
         @Override
         public void execute(Runnable command) {
             wrapped.execute(command);
+        }
+
+        @Override
+        public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <V> ScheduledFuture<V> schedule(Callable<V> callable, long delay, TimeUnit unit) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ScheduledFuture<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ScheduledFuture<?> scheduleWithFixedDelay(
+                Runnable command, long initialDelay, long delay, TimeUnit unit) {
+            throw new UnsupportedOperationException();
         }
     }
 }

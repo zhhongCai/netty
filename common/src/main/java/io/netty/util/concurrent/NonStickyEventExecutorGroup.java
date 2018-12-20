@@ -344,5 +344,26 @@ public final class NonStickyEventExecutorGroup implements EventExecutorGroup {
                 }
             }
         }
+
+        @Override
+        public ScheduledFuture<?> schedule(Runnable command, long delay,
+                                           TimeUnit unit) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <V> ScheduledFuture<V> schedule(Callable<V> callable, long delay, TimeUnit unit) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ScheduledFuture<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
+            throw new UnsupportedOperationException();
+        }
     }
 }

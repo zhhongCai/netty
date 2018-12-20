@@ -23,12 +23,14 @@ import io.netty.channel.nio.AbstractNioChannel;
 import io.netty.channel.nio.NioHandler;
 import io.netty.util.concurrent.AbstractEventExecutor;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.ScheduledFuture;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 import java.nio.channels.NetworkChannel;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
@@ -161,6 +163,28 @@ public abstract class AbstractNioChannelTest<T extends AbstractNioChannel> {
             @Override
             public void execute(Runnable command) {
                 eventLoop.execute(command);
+            }
+
+            @Override
+            public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit) {
+                return eventLoop.schedule(command, delay, unit);
+            }
+
+            @Override
+            public <V> ScheduledFuture<V> schedule(Callable<V> callable, long delay, TimeUnit unit) {
+                return eventLoop.schedule(callable, delay, unit);
+            }
+
+            @Override
+            public ScheduledFuture<?> scheduleAtFixedRate(
+                    Runnable command, long initialDelay, long period, TimeUnit unit) {
+                return eventLoop.scheduleAtFixedRate(command, initialDelay, period, unit);
+            }
+
+            @Override
+            public ScheduledFuture<?> scheduleWithFixedDelay(
+                    Runnable command, long initialDelay, long delay, TimeUnit unit) {
+                return eventLoop.scheduleWithFixedDelay(command, initialDelay, delay, unit);
             }
         }
 
