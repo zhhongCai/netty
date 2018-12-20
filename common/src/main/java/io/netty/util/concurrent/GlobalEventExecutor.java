@@ -40,16 +40,23 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
 
     private static final long SCHEDULE_QUIET_PERIOD_INTERVAL = TimeUnit.SECONDS.toNanos(1);
 
-    public static final GlobalEventExecutor INSTANCE = new GlobalEventExecutor();
+    private static final RunnableScheduledFutureAdapter<Void> QUIET_PERIOD_TASK;
+    public static final GlobalEventExecutor INSTANCE;
 
-    final BlockingQueue<Runnable> taskQueue = new LinkedBlockingQueue<Runnable>();
-    final ScheduledFutureTask<Void> quietPeriodTask = new ScheduledFutureTask<Void>(
-            this, Executors.<Void>callable(new Runnable() {
-        @Override
-        public void run() {
-            // NOOP
-        }
-    }, null), ScheduledFutureTask.deadlineNanos(SCHEDULE_QUIET_PERIOD_INTERVAL), -SCHEDULE_QUIET_PERIOD_INTERVAL);
+    static {
+        INSTANCE = new GlobalEventExecutor();
+        QUIET_PERIOD_TASK = new RunnableScheduledFutureAdapter<Void>(
+                INSTANCE, INSTANCE.<Void>newPromise(), Executors.<Void>callable(new Runnable() {
+            @Override
+            public void run() {
+                // NOOP
+            }
+        }, null), deadlineNanos(SCHEDULE_QUIET_PERIOD_INTERVAL), -SCHEDULE_QUIET_PERIOD_INTERVAL);
+
+        INSTANCE.scheduledTaskQueue().add(QUIET_PERIOD_TASK);
+    }
+
+    private final BlockingQueue<Runnable> taskQueue = new LinkedBlockingQueue<Runnable>();
 
     // because the GlobalEventExecutor is a singleton, tasks submitted to it can come from arbitrary threads and this
     // can trigger the creation of a thread from arbitrary thread groups; for this reason, the thread factory must not
@@ -64,7 +71,6 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
     private final Future<?> terminationFuture = new FailedFuture<Object>(this, new UnsupportedOperationException());
 
     private GlobalEventExecutor() {
-        scheduledTaskQueue().add(quietPeriodTask);
     }
 
     /**
@@ -72,10 +78,10 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
      *
      * @return {@code null} if the executor thread has been interrupted or waken up.
      */
-    Runnable takeTask() {
+    private Runnable takeTask() {
         BlockingQueue<Runnable> taskQueue = this.taskQueue;
         for (;;) {
-            ScheduledFutureTask<?> scheduledTask = peekScheduledTask();
+            RunnableScheduledFuture<?> scheduledTask = peekScheduledTask();
             if (scheduledTask == null) {
                 Runnable task = null;
                 try {
@@ -250,12 +256,12 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
                         logger.warn("Unexpected exception from the global event executor: ", t);
                     }
 
-                    if (task != quietPeriodTask) {
+                    if (task != QUIET_PERIOD_TASK) {
                         continue;
                     }
                 }
 
-                Queue<ScheduledFutureTask<?>> scheduledTaskQueue = GlobalEventExecutor.this.scheduledTaskQueue;
+                Queue<RunnableScheduledFutureNode<?>> scheduledTaskQueue = GlobalEventExecutor.this.scheduledTaskQueue;
                 // Terminate if there is no task in the queue (except the noop task).
                 if (taskQueue.isEmpty() && (scheduledTaskQueue == null || scheduledTaskQueue.size() == 1)) {
                     // Mark the current thread as stopped.
