@@ -126,7 +126,6 @@ public final class NioHandler implements SingleThreadEventLoop.IoHandler {
 
     private final SelectStrategy selectStrategy;
 
-    private volatile int ioRatio = 50;
     private int cancelledKeys;
     private boolean needsToSelectAgain;
 
@@ -318,28 +317,10 @@ public final class NioHandler implements SingleThreadEventLoop.IoHandler {
     }
 
     /**
-     * Returns the percentage of the desired amount of time spent for I/O in the event loop.
-     */
-    public int getIoRatio() {
-        return ioRatio;
-    }
-
-    /**
-     * Sets the percentage of the desired amount of time spent for I/O in the event loop.  The default value is
-     * {@code 50}, which means the event loop will try to spend the same amount of time for I/O as for non-I/O tasks.
-     */
-    public void setIoRatio(int ioRatio) {
-        if (ioRatio <= 0 || ioRatio > 100) {
-            throw new IllegalArgumentException("ioRatio: " + ioRatio + " (expected: 0 < ioRatio <= 100)");
-        }
-        this.ioRatio = ioRatio;
-    }
-
-    /**
      * Replaces the current {@link Selector} of this event loop with newly created {@link Selector}s to work
      * around the infamous epoll 100% CPU bug.
      */
-    public void rebuildSelector() {
+    void rebuildSelector() {
         final Selector oldSelector = selector;
         final SelectorTuple newSelectorTuple;
 
@@ -495,25 +476,7 @@ public final class NioHandler implements SingleThreadEventLoop.IoHandler {
 
             cancelledKeys = 0;
             needsToSelectAgain = false;
-            final int ioRatio = this.ioRatio;
-            if (ioRatio == 100) {
-                try {
-                    processSelectedKeys();
-                } finally {
-                    // Ensure we always run tasks.
-                    //runner.run();
-                }
-            } else {
-                final long ioStartTime = System.nanoTime();
-                try {
-                    processSelectedKeys();
-                } finally {
-                    // Ensure we always run tasks.
-                    //final long ioTime = System.nanoTime() - ioStartTime;
-                    // runAllTasks(ioTime * (100 - ioRatio) / ioRatio);
-                    //runner.run();
-                }
-            }
+            processSelectedKeys();
         } catch (Throwable t) {
             handleLoopException(t);
         }

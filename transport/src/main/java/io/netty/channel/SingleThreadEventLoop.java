@@ -32,6 +32,9 @@ import java.util.concurrent.ThreadFactory;
  */
 public class SingleThreadEventLoop extends SingleThreadEventExecutor implements EventLoop {
 
+    public static final int DEFAULT_MAX_PENDING_TASKS = Math.max(16,
+            SystemPropertyUtil.getInt("io.netty.eventLoop.maxPendingTasks", Integer.MAX_VALUE));
+
     private final ExecutionContext context = new ExecutionContext() {
         @Override
         public boolean isTaskReady() {
@@ -59,9 +62,6 @@ public class SingleThreadEventLoop extends SingleThreadEventExecutor implements 
     };
 
     private final IoHandler ioHandler;
-
-    public static final int DEFAULT_MAX_PENDING_TASKS = Math.max(16,
-            SystemPropertyUtil.getInt("io.netty.eventLoop.maxPendingTasks", Integer.MAX_VALUE));
 
     public SingleThreadEventLoop(EventLoopGroup parent, ThreadFactory threadFactory, IoHandler ioHandler) {
         this(parent, threadFactory, ioHandler, DEFAULT_MAX_PENDING_TASKS, RejectedExecutionHandlers.reject());
@@ -103,7 +103,7 @@ public class SingleThreadEventLoop extends SingleThreadEventExecutor implements 
     }
 
     @Override
-    protected boolean wakesUpForTask(Runnable task) {
+    protected final boolean wakesUpForTask(Runnable task) {
         return !(task instanceof NonWakeupRunnable);
     }
 
@@ -121,7 +121,7 @@ public class SingleThreadEventLoop extends SingleThreadEventExecutor implements 
     protected void run() {
         do {
             runIo();
-            runAllTasks();
+            runAllTasks(Integer.MAX_VALUE);
         } while (!confirmShutdown());
     }
 

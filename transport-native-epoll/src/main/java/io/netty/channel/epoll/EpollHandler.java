@@ -76,7 +76,6 @@ public class EpollHandler implements SingleThreadEventLoop.IoHandler {
     };
     @SuppressWarnings("unused") // AtomicIntegerFieldUpdater
     private volatile int wakenUp;
-    private volatile int ioRatio = 50;
 
     // See http://man7.org/linux/man-pages/man2/timerfd_create.2.html.
     private static final long MAX_SCHEDULED_TIMERFD_NS = 999999999;
@@ -263,24 +262,6 @@ public class EpollHandler implements SingleThreadEventLoop.IoHandler {
         }
     }
 
-    /**
-     * Returns the percentage of the desired amount of time spent for I/O in the event loop.
-     */
-    public final int getIoRatio() {
-        return ioRatio;
-    }
-
-    /**
-     * Sets the percentage of the desired amount of time spent for I/O in the event loop.  The default value is
-     * {@code 50}, which means the event loop will try to spend the same amount of time for I/O as for non-I/O tasks.
-     */
-    public final void setIoRatio(int ioRatio) {
-        if (ioRatio <= 0 || ioRatio > 100) {
-            throw new IllegalArgumentException("ioRatio: " + ioRatio + " (expected: 0 < ioRatio <= 100)");
-        }
-        this.ioRatio = ioRatio;
-    }
-
     private int epollWait(SingleThreadEventLoop.ExecutionContext context, boolean oldWakeup) throws IOException {
         // If a task was submitted when wakenUp value was 1, the task didn't get a chance to produce wakeup event.
         // So we need to check task queue again before calling epoll_wait. If we don't, the task might be pended
@@ -362,29 +343,8 @@ public class EpollHandler implements SingleThreadEventLoop.IoHandler {
                     // fallthrough
                 default:
             }
-
-            final int ioRatio = this.ioRatio;
-            if (ioRatio == 100) {
-                try {
-                    if (strategy > 0) {
-                        processReady(events, strategy);
-                    }
-                } finally {
-                    // Ensure we always run tasks.
-                    //runAllTasks();
-                }
-            } else {
-                final long ioStartTime = System.nanoTime();
-
-                try {
-                    if (strategy > 0) {
-                        processReady(events, strategy);
-                    }
-                } finally {
-                    // Ensure we always run tasks.
-                    //final long ioTime = System.nanoTime() - ioStartTime;
-                    //runAllTasks(ioTime * (100 - ioRatio) / ioRatio);
-                }
+            if (strategy > 0) {
+                processReady(events, strategy);
             }
             if (allowGrowing && strategy == events.length()) {
                 //increase the size of the array as we needed the whole space for the events

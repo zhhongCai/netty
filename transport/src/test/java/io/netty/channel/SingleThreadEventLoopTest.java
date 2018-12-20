@@ -533,7 +533,7 @@ public class SingleThreadEventLoopTest {
                     // Waken up by interruptThread()
                 }
 
-                runAllTasks();
+                runAllTasks(Integer.MAX_VALUE);
 
                 if (confirmShutdown()) {
                     break;

@@ -18,7 +18,6 @@ package io.netty.channel.kqueue;
 import io.netty.channel.DefaultSelectStrategyFactory;
 import io.netty.channel.MultithreadEventLoopGroup;
 import io.netty.channel.SelectStrategyFactory;
-import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.RejectedExecutionHandler;
 import io.netty.util.internal.UnstableApi;
 
@@ -112,15 +111,5 @@ public final class KQueueEventLoopGroup extends MultithreadEventLoopGroup {
                                RejectedExecutionHandler rejectedExecutionHandler) {
         super(nThreads, executor, maxTasks, rejectedExecutionHandler,
                 KQueueHandler.newFactory(0, selectStrategyFactory));
-    }
-
-    /**
-     * Sets the percentage of the desired amount of time spent for I/O in the child event loops.  The default value is
-     * {@code 50}, which means the event loop will try to spend the same amount of time for I/O as for non-I/O tasks.
-     */
-    public void setIoRatio(int ioRatio) {
-        for (EventExecutor e: this) {
-            //((KQueueHandler) e).setIoRatio(ioRatio);
-        }
     }
 }

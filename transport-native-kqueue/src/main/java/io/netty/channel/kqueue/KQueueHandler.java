@@ -69,7 +69,6 @@ public final class KQueueHandler implements SingleThreadEventLoop.IoHandler {
     private final IntObjectMap<AbstractKQueueChannel> channels = new IntObjectHashMap<AbstractKQueueChannel>(4096);
 
     private volatile int wakenUp;
-    private volatile int ioRatio = 50;
 
     private static AbstractKQueueChannel cast(Channel channel) {
         if (channel instanceof AbstractKQueueChannel) {
@@ -291,26 +290,8 @@ public final class KQueueHandler implements SingleThreadEventLoop.IoHandler {
                 default:
             }
 
-            final int ioRatio = this.ioRatio;
-            if (ioRatio == 100) {
-                try {
-                    if (strategy > 0) {
-                        processReady(strategy);
-                    }
-                } finally {
-                    //runAllTasks();
-                }
-            } else {
-                final long ioStartTime = System.nanoTime();
-
-                try {
-                    if (strategy > 0) {
-                        processReady(strategy);
-                    }
-                } finally {
-                    //final long ioTime = System.nanoTime() - ioStartTime;
-                    //runAllTasks(ioTime * (100 - ioRatio) / ioRatio);
-                }
+            if (strategy > 0) {
+                processReady(strategy);
             }
             if (allowGrowing && strategy == eventList.capacity()) {
                 //increase the size of the array as we needed the whole space for the events
@@ -327,24 +308,6 @@ public final class KQueueHandler implements SingleThreadEventLoop.IoHandler {
         } catch (Throwable t) {
             handleLoopException(t);
         }
-    }
-
-    /**
-     * Returns the percentage of the desired amount of time spent for I/O in the event loop.
-     */
-    public int getIoRatio() {
-        return ioRatio;
-    }
-
-    /**
-     * Sets the percentage of the desired amount of time spent for I/O in the event loop.  The default value is
-     * {@code 50}, which means the event loop will try to spend the same amount of time for I/O as for non-I/O tasks.
-     */
-    public void setIoRatio(int ioRatio) {
-        if (ioRatio <= 0 || ioRatio > 100) {
-            throw new IllegalArgumentException("ioRatio: " + ioRatio + " (expected: 0 < ioRatio <= 100)");
-        }
-        this.ioRatio = ioRatio;
     }
 
     @Override

@@ -22,20 +22,27 @@ import io.netty.channel.local.LocalEventLoopGroup;
 import io.netty.channel.local.LocalAddress;
 import io.netty.channel.local.LocalChannel;
 import io.netty.channel.local.LocalServerChannel;
+import io.netty.util.concurrent.AbstractEventExecutor;
 import io.netty.util.concurrent.EventExecutor;
+import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.SingleThreadEventExecutor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.nio.channels.ClosedChannelException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -266,8 +273,50 @@ public class ChannelInitializerTest {
         final AtomicReference<Throwable> errorRef = new AtomicReference<Throwable>();
         LocalAddress addr = new LocalAddress("test");
 
-        final EventExecutor executor = new SingleThreadEventExecutor() {
+        final EventExecutor executor = new AbstractEventExecutor() {
             private final ScheduledExecutorService execService = Executors.newSingleThreadScheduledExecutor();
+
+            @Override
+            public EventExecutor next() {
+                return this;
+            }
+
+            @Override
+            public EventExecutorGroup parent() {
+                return null;
+            }
+
+            @Override
+            public boolean inEventLoop() {
+                return false;
+            }
+
+            @Override
+            public boolean inEventLoop(Thread thread) {
+                return false;
+            }
+
+            @Override
+            public boolean isShuttingDown() {
+                return execService.isShutdown();
+            }
+
+            @Override
+            public Future<?> shutdownGracefully() {
+                shutdown();
+                return newSucceededFuture(null);
+            }
+
+            @Override
+            public Future<?> shutdownGracefully(long quietPeriod, long timeout, TimeUnit unit) {
+                shutdown();
+                return newSucceededFuture(null);
+            }
+
+            @Override
+            public Future<?> terminationFuture() {
+                return newFailedFuture(new UnsupportedOperationException());
+            }
 
             @Override
             public void shutdown() {
@@ -275,24 +324,13 @@ public class ChannelInitializerTest {
             }
 
             @Override
-            public boolean inEventLoop(Thread thread) {
-                // Always return false which will ensure we always call execute(...)
-                return false;
+            public List<Runnable> shutdownNow() {
+                return execService.shutdownNow();
             }
 
             @Override
-            public boolean isShuttingDown() {
-                return false;
-            }
-
-            @Override
-            public Future<?> shutdownGracefully(long quietPeriod, long timeout, TimeUnit unit) {
-                throw new IllegalStateException();
-            }
-
-            @Override
-            public Future<?> terminationFuture() {
-                throw new IllegalStateException();
+            public Iterator<EventExecutor> iterator() {
+                return Collections.<EventExecutor>singleton(this).iterator();
             }
 
             @Override
@@ -308,6 +346,30 @@ public class ChannelInitializerTest {
             @Override
             public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
                 return execService.awaitTermination(timeout, unit);
+            }
+
+            @Override
+            public <T> List<java.util.concurrent.Future<T>> invokeAll(Collection<? extends Callable<T>> tasks)
+                    throws InterruptedException {
+                return execService.invokeAll(tasks);
+            }
+
+            @Override
+            public <T> List<java.util.concurrent.Future<T>> invokeAll(
+                    Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException {
+                return execService.invokeAll(tasks, timeout, unit);
+            }
+
+            @Override
+            public <T> T invokeAny(Collection<? extends Callable<T>> tasks)
+                    throws InterruptedException, ExecutionException {
+                return execService.invokeAny(tasks);
+            }
+
+            @Override
+            public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
+                    throws InterruptedException, ExecutionException, TimeoutException {
+                return execService.invokeAny(tasks, timeout, unit);
             }
 
             @Override

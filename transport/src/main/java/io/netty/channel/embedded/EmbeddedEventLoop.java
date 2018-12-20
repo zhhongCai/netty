@@ -100,9 +100,8 @@ final class EmbeddedEventLoop extends AbstractScheduledEventExecutor implements 
         return nextScheduledTaskNano();
     }
 
-    @Override
-    protected void cancelScheduledTasks() {
-        super.cancelScheduledTasks();
+    void cancelScheduled() {
+        cancelScheduledTasks();
     }
 
     @Override

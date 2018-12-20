@@ -28,10 +28,8 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
-import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.SingleThreadEventLoop;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
@@ -237,7 +235,7 @@ public class LocalChannelTest {
                 return new LocalEventLoop(this, executor, maxPendingTasks, rejectedExecutionHandler) {
                     @Override
                     protected void run() {
-                        for (;;) {
+                        do {
                             Runnable task = takeTask();
                             if (task != null) {
                                 /* Only slow down the anonymous class in LocalChannel#doRegister() */
@@ -251,11 +249,7 @@ public class LocalChannelTest {
                                 task.run();
                                 updateLastExecutionTime();
                             }
-
-                            if (confirmShutdown()) {
-                                break;
-                            }
-                        }
+                        } while (!confirmShutdown());
                     }
                 };
             }
