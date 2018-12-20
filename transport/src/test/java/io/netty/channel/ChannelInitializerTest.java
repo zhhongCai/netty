@@ -278,21 +278,6 @@ public class ChannelInitializerTest {
             private final ScheduledExecutorService execService = Executors.newSingleThreadScheduledExecutor();
 
             @Override
-            public EventExecutor next() {
-                return this;
-            }
-
-            @Override
-            public EventExecutorGroup parent() {
-                return null;
-            }
-
-            @Override
-            public boolean inEventLoop() {
-                return false;
-            }
-
-            @Override
             public boolean inEventLoop(Thread thread) {
                 return false;
             }
@@ -300,12 +285,6 @@ public class ChannelInitializerTest {
             @Override
             public boolean isShuttingDown() {
                 return execService.isShutdown();
-            }
-
-            @Override
-            public Future<?> shutdownGracefully() {
-                shutdown();
-                return newSucceededFuture(null);
             }
 
             @Override
@@ -327,11 +306,6 @@ public class ChannelInitializerTest {
             @Override
             public List<Runnable> shutdownNow() {
                 return execService.shutdownNow();
-            }
-
-            @Override
-            public Iterator<EventExecutor> iterator() {
-                return Collections.<EventExecutor>singleton(this).iterator();
             }
 
             @Override

@@ -101,7 +101,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
     /**
      * @see #pollScheduledTask(long)
      */
-    protected final Runnable pollScheduledTask() {
+    protected final RunnableScheduledFuture<?> pollScheduledTask() {
         return pollScheduledTask(nanoTime());
     }
 
@@ -111,7 +111,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
      *
      * This method MUST be called only when {@link #inEventLoop()} is {@code true}.
      */
-    protected final Runnable pollScheduledTask(long nanoTime) {
+    protected final RunnableScheduledFuture<?> pollScheduledTask(long nanoTime) {
         assert inEventLoop();
 
         Queue<RunnableScheduledFutureNode<?>> scheduledTaskQueue = this.scheduledTaskQueue;

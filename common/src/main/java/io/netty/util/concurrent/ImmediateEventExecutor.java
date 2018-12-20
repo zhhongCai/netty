@@ -58,11 +58,6 @@ public final class ImmediateEventExecutor extends AbstractEventExecutor {
     private ImmediateEventExecutor() { }
 
     @Override
-    public boolean inEventLoop() {
-        return true;
-    }
-
-    @Override
     public boolean inEventLoop(Thread thread) {
         return true;
     }

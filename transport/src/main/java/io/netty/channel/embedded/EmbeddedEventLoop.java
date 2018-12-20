@@ -141,11 +141,6 @@ final class EmbeddedEventLoop extends AbstractScheduledEventExecutor implements 
     }
 
     @Override
-    public boolean inEventLoop() {
-        return true;
-    }
-
-    @Override
     public boolean inEventLoop(Thread thread) {
         return true;
     }

@@ -84,11 +84,6 @@ public class AbstractSharedExecutorMicrobenchmark extends AbstractMicrobenchmark
         }
 
         @Override
-        public boolean inEventLoop() {
-            return executor.inEventLoop();
-        }
-
-        @Override
         public boolean inEventLoop(Thread thread) {
             return executor.inEventLoop(thread);
         }

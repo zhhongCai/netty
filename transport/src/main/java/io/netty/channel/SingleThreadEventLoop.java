@@ -35,6 +35,9 @@ public class SingleThreadEventLoop extends SingleThreadEventExecutor implements 
     public static final int DEFAULT_MAX_PENDING_TASKS = Math.max(16,
             SystemPropertyUtil.getInt("io.netty.eventLoop.maxPendingTasks", Integer.MAX_VALUE));
 
+    protected static final int DEFAULT_MAX_TASKS_PER_RUN = Math.max(1,
+            SystemPropertyUtil.getInt("io.netty.eventLoop.maxTaskPerRun", Integer.MAX_VALUE));
+
     private final ExecutionContext context = new ExecutionContext() {
         @Override
         public boolean isTaskReady() {
@@ -62,6 +65,7 @@ public class SingleThreadEventLoop extends SingleThreadEventExecutor implements 
     };
 
     private final IoHandler ioHandler;
+    private final int maxTasksPerRun;
 
     public SingleThreadEventLoop(EventLoopGroup parent, ThreadFactory threadFactory, IoHandler ioHandler) {
         this(parent, threadFactory, ioHandler, DEFAULT_MAX_PENDING_TASKS, RejectedExecutionHandlers.reject());
@@ -74,15 +78,29 @@ public class SingleThreadEventLoop extends SingleThreadEventExecutor implements 
     public SingleThreadEventLoop(EventLoopGroup parent, ThreadFactory threadFactory,
                                  IoHandler ioHandler, int maxPendingTasks,
                                  RejectedExecutionHandler rejectedExecutionHandler) {
-        super(parent, threadFactory, maxPendingTasks, rejectedExecutionHandler);
-        this.ioHandler = new IoHandlerWrapper(ioHandler);
+        this(parent, threadFactory, ioHandler, maxPendingTasks, rejectedExecutionHandler, DEFAULT_MAX_TASKS_PER_RUN);
     }
 
     public SingleThreadEventLoop(EventLoopGroup parent, Executor executor,
                                  IoHandler ioHandler, int maxPendingTasks,
                                  RejectedExecutionHandler rejectedExecutionHandler) {
+        this(parent, executor, ioHandler, maxPendingTasks, rejectedExecutionHandler, DEFAULT_MAX_TASKS_PER_RUN);
+    }
+
+    public SingleThreadEventLoop(EventLoopGroup parent, ThreadFactory threadFactory,
+                                 IoHandler ioHandler, int maxPendingTasks,
+                                 RejectedExecutionHandler rejectedExecutionHandler, int maxTasksPerRun) {
+        super(parent, threadFactory, maxPendingTasks, rejectedExecutionHandler);
+        this.ioHandler = new IoHandlerWrapper(ioHandler);
+        this.maxTasksPerRun = ObjectUtil.checkPositive(maxTasksPerRun, "maxTasksPerRun");
+    }
+
+    public SingleThreadEventLoop(EventLoopGroup parent, Executor executor,
+                                 IoHandler ioHandler, int maxPendingTasks,
+                                 RejectedExecutionHandler rejectedExecutionHandler, int maxTasksPerRun) {
         super(parent, executor, maxPendingTasks, rejectedExecutionHandler);
         this.ioHandler = new IoHandlerWrapper(ioHandler);
+        this.maxTasksPerRun = ObjectUtil.checkPositive(maxTasksPerRun, "maxTasksPerRun");
     }
 
     @Override
@@ -99,7 +117,7 @@ public class SingleThreadEventLoop extends SingleThreadEventExecutor implements 
 
     @Override
     public final EventLoop next() {
-        return (EventLoop) super.next();
+        return this;
     }
 
     @Override
@@ -121,7 +139,7 @@ public class SingleThreadEventLoop extends SingleThreadEventExecutor implements 
     protected void run() {
         do {
             runIo();
-            runAllTasks(Integer.MAX_VALUE);
+            runAllTasks(maxTasksPerRun);
         } while (!confirmShutdown());
     }
 

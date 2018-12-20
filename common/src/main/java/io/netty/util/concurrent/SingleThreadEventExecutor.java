@@ -286,11 +286,11 @@ public class SingleThreadEventExecutor extends AbstractScheduledEventExecutor im
 
     private boolean fetchFromScheduledTaskQueue() {
         long nanoTime = AbstractScheduledEventExecutor.nanoTime();
-        Runnable scheduledTask  = pollScheduledTask(nanoTime);
+        RunnableScheduledFuture<?> scheduledTask  = pollScheduledTask(nanoTime);
         while (scheduledTask != null) {
             if (!taskQueue.offer(scheduledTask)) {
                 // No space left in the task queue add it back to the scheduledTaskQueue so we pick it up again.
-                scheduledTaskQueue().add((RunnableScheduledFutureAdapter<?>) scheduledTask);
+                schedule(scheduledTask);
                 return false;
             }
             scheduledTask  = pollScheduledTask(nanoTime);
@@ -302,12 +302,11 @@ public class SingleThreadEventExecutor extends AbstractScheduledEventExecutor im
      * @see Queue#isEmpty()
      */
     protected final boolean hasTasks() {
-        assert inEventLoop();
         return !taskQueue.isEmpty();
     }
 
     /**
-     * Return the number of tasks that are pending for processing.
+     * Return the number of tasks that are pending for processing (excluding the scheduled tasks).
      *
      * <strong>Be aware that this operation may be expensive as it depends on the internal implementation of the
      * SingleThreadEventExecutor. So use it with care!</strong>
@@ -321,25 +320,22 @@ public class SingleThreadEventExecutor extends AbstractScheduledEventExecutor im
      * before.
      */
     private void addTask(Runnable task) {
-        if (task == null) {
-            throw new NullPointerException("task");
-        }
         if (!offerTask(task)) {
             rejectedExecutionHandler.rejected(task, this);
         }
     }
 
-    final boolean offerTask(Runnable task) {
+    protected final boolean offerTask(Runnable task) {
+        if (task == null) {
+            throw new NullPointerException("task");
+        }
         if (isShutdown()) {
             reject();
         }
         return taskQueue.offer(task);
     }
 
-    private boolean removeTask(Runnable task) {
-        if (task == null) {
-            throw new NullPointerException("task");
-        }
+    protected final boolean removeTask(Runnable task) {
         return taskQueue.remove(task);
     }
 

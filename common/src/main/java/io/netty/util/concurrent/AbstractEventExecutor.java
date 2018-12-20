@@ -58,17 +58,17 @@ public abstract class AbstractEventExecutor extends AbstractExecutorService impl
     }
 
     @Override
-    public boolean inEventLoop() {
+    public final boolean inEventLoop() {
         return inEventLoop(Thread.currentThread());
     }
 
     @Override
-    public Iterator<EventExecutor> iterator() {
+    public final Iterator<EventExecutor> iterator() {
         return selfCollection.iterator();
     }
 
     @Override
-    public Future<?> shutdownGracefully() {
+    public final Future<?> shutdownGracefully() {
         return shutdownGracefully(DEFAULT_SHUTDOWN_QUIET_PERIOD, DEFAULT_SHUTDOWN_TIMEOUT, TimeUnit.SECONDS);
     }
 

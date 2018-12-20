@@ -288,11 +288,6 @@ public final class NonStickyEventExecutorGroup implements EventExecutorGroup {
         }
 
         @Override
-        public boolean inEventLoop() {
-            return false;
-        }
-
-        @Override
         public boolean isShuttingDown() {
             return executor.isShutdown();
         }
