@@ -201,7 +201,7 @@ public class SingleThreadEventLoop extends SingleThreadEventExecutor implements 
     /**
      * Handles IO dispatching on a {@link SingleThreadEventLoop}.
      * All operations except {@link #wakeup(boolean)} <strong>MUST</strong> be executed
-     * on the {@link EventLoop} thread.
+     * on the {@link EventLoop} thread and should never be called from the user-directly.
      */
     public interface IoHandler extends Unsafe {
         /**
