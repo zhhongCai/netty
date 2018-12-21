@@ -35,8 +35,9 @@ public class SingleThreadEventLoop extends SingleThreadEventExecutor implements 
     public static final int DEFAULT_MAX_PENDING_TASKS = Math.max(16,
             SystemPropertyUtil.getInt("io.netty.eventLoop.maxPendingTasks", Integer.MAX_VALUE));
 
+    // TODO: Is this a sensible default ?
     protected static final int DEFAULT_MAX_TASKS_PER_RUN = Math.max(1,
-            SystemPropertyUtil.getInt("io.netty.eventLoop.maxTaskPerRun", Integer.MAX_VALUE));
+            SystemPropertyUtil.getInt("io.netty.eventLoop.maxTaskPerRun", 1024 * 4));
 
     private final ExecutionContext context = new ExecutionContext() {
         @Override
@@ -302,7 +303,7 @@ public class SingleThreadEventLoop extends SingleThreadEventExecutor implements 
          * scheduled on the {@link EventLoop}. This is done by taking {@link ExecutionContext#delayNanos(long)} or
          * {@link ExecutionContext#deadlineNanos()} into account.
          *
-         * @returns the number of {@link Channel} for which I/O was handled.
+         * @return the number of {@link Channel} for which I/O was handled.
          */
         int run(ExecutionContext runner);
 
