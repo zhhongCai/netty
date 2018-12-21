@@ -224,7 +224,10 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
         return schedule(task);
     }
 
-    protected <V> ScheduledFuture<V> schedule(final RunnableScheduledFuture<V> task) {
+    /**
+     * Add the {@link RunnableScheduledFuture} for execution.
+     */
+    protected final <V> ScheduledFuture<V> schedule(final RunnableScheduledFuture<V> task) {
         if (inEventLoop()) {
             add0(task);
         } else {

@@ -64,6 +64,18 @@ public class SingleThreadEventLoop extends SingleThreadEventExecutor implements 
         }
     };
 
+    private final Unsafe unsafe = new Unsafe() {
+        @Override
+        public void register(Channel channel) throws Exception {
+            SingleThreadEventLoop.this.register(channel);
+        }
+
+        @Override
+        public void deregister(Channel channel) throws Exception {
+            SingleThreadEventLoop.this.deregister(channel);
+        }
+    };
+
     private final IoHandler ioHandler;
     private final int maxTasksPerRun;
 
@@ -91,7 +103,7 @@ public class SingleThreadEventLoop extends SingleThreadEventExecutor implements 
                                  IoHandler ioHandler, int maxPendingTasks,
                                  RejectedExecutionHandler rejectedExecutionHandler, int maxTasksPerRun) {
         super(parent, threadFactory, maxPendingTasks, rejectedExecutionHandler);
-        this.ioHandler = new IoHandlerWrapper(ioHandler);
+        this.ioHandler = ObjectUtil.checkNotNull(ioHandler, "ioHandler");
         this.maxTasksPerRun = ObjectUtil.checkPositive(maxTasksPerRun, "maxTasksPerRun");
     }
 
@@ -99,7 +111,7 @@ public class SingleThreadEventLoop extends SingleThreadEventExecutor implements 
                                  IoHandler ioHandler, int maxPendingTasks,
                                  RejectedExecutionHandler rejectedExecutionHandler, int maxTasksPerRun) {
         super(parent, executor, maxPendingTasks, rejectedExecutionHandler);
-        this.ioHandler = new IoHandlerWrapper(ioHandler);
+        this.ioHandler = ObjectUtil.checkNotNull(ioHandler, "ioHandler");
         this.maxTasksPerRun = ObjectUtil.checkPositive(maxTasksPerRun, "maxTasksPerRun");
     }
 
@@ -132,7 +144,7 @@ public class SingleThreadEventLoop extends SingleThreadEventExecutor implements 
 
     @Override
     public final Unsafe unsafe() {
-        return ioHandler;
+        return unsafe;
     }
 
     @Override
@@ -143,9 +155,33 @@ public class SingleThreadEventLoop extends SingleThreadEventExecutor implements 
         } while (!confirmShutdown());
     }
 
+    /**
+     * Called when IO will be processed for all the {@link Channel}s on this {@link SingleThreadEventLoop}.
+     * This method returns the number of {@link Channel}s for which IO was processed.
+     *
+     * This method must be called from the {@link EventLoop} thread.
+     */
     protected int runIo() {
         assert inEventLoop();
         return ioHandler.run(context);
+    }
+
+    /**
+     * Called once a {@link Channel} should be registered on this {@link SingleThreadEventLoop}.
+     *
+     * This method must be called from the {@link EventLoop} thread.
+     */
+    protected void register(Channel channel) throws Exception {
+        assert inEventLoop();
+        ioHandler.register(channel);
+    }
+
+    /**
+     * Called once a {@link Channel} should be deregistered from this {@link SingleThreadEventLoop}.
+     */
+    protected void deregister(Channel channel) throws Exception {
+        assert inEventLoop();
+        ioHandler.deregister(channel);
     }
 
     @Override
@@ -224,44 +260,5 @@ public class SingleThreadEventLoop extends SingleThreadEventExecutor implements 
          * Destroy the {@link IoHandler} and free all its resources.
          */
         void destroy();
-    }
-
-    // Verifies that the methods are called from within the EventLoop thread before delegate to the real
-    // implementation.
-    private final class IoHandlerWrapper implements IoHandler {
-        private final IoHandler ioHandler;
-
-        IoHandlerWrapper(IoHandler ioHandler) {
-            this.ioHandler = ObjectUtil.checkNotNull(ioHandler, "ioHandler");
-        }
-
-        @Override
-        public int run(ExecutionContext runner) {
-            assert inEventLoop();
-            return ioHandler.run(runner);
-        }
-
-        @Override
-        public void wakeup(boolean inEventLoop) {
-            ioHandler.wakeup(inEventLoop);
-        }
-
-        @Override
-        public void destroy() {
-            assert inEventLoop();
-            ioHandler.destroy();
-        }
-
-        @Override
-        public void register(Channel channel) throws Exception {
-            assert inEventLoop();
-            ioHandler.register(channel);
-        }
-
-        @Override
-        public void deregister(Channel channel) throws Exception {
-            assert inEventLoop();
-            ioHandler.deregister(channel);
-        }
     }
 }

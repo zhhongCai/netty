@@ -215,6 +215,8 @@ public class SingleThreadEventExecutor extends AbstractScheduledEventExecutor im
 
     /**
      * @see Queue#poll()
+     *
+     * This method must be called from the {@link EventExecutor} thread.
      */
     protected final Runnable pollTask() {
         assert inEventLoop();
@@ -234,6 +236,8 @@ public class SingleThreadEventExecutor extends AbstractScheduledEventExecutor im
      * Be aware that this method will throw an {@link UnsupportedOperationException} if the task queue, which was
      * created via {@link #newTaskQueue(int)}, does not implement {@link BlockingQueue}.
      * </p>
+     *
+     * This method must be called from the {@link EventExecutor} thread.
      *
      * @return {@code null} if the executor thread has been interrupted or waken up.
      */
@@ -307,9 +311,6 @@ public class SingleThreadEventExecutor extends AbstractScheduledEventExecutor im
 
     /**
      * Return the number of tasks that are pending for processing (excluding the scheduled tasks).
-     *
-     * <strong>Be aware that this operation may be expensive as it depends on the internal implementation of the
-     * SingleThreadEventExecutor. So use it with care!</strong>
      */
     public final int pendingTasks() {
         return taskQueue.size();
@@ -325,6 +326,9 @@ public class SingleThreadEventExecutor extends AbstractScheduledEventExecutor im
         }
     }
 
+    /**
+     * @see Queue#offer(Object)
+     */
     protected final boolean offerTask(Runnable task) {
         if (task == null) {
             throw new NullPointerException("task");
@@ -335,12 +339,17 @@ public class SingleThreadEventExecutor extends AbstractScheduledEventExecutor im
         return taskQueue.offer(task);
     }
 
+    /**
+     * @see Queue#remove(Object)
+     */
     protected final boolean removeTask(Runnable task) {
         return taskQueue.remove(task);
     }
 
     /**
      * Poll all tasks from the task queue and run them via {@link Runnable#run()} method.
+     *
+     * This method must be called from the {@link EventExecutor} thread.
      *
      * @return {@code true} if and only if at least one task was run
      */
@@ -369,9 +378,12 @@ public class SingleThreadEventExecutor extends AbstractScheduledEventExecutor im
     /**
      * Poll all tasks from the task queue and run them via {@link Runnable#run()} method.
      *
+     * This method must be called from the {@link EventExecutor} thread.
+     *
      * @return the number of processed tasks.
      */
     protected int runAllTasks(int maxTasks) {
+        assert inEventLoop();
         boolean fetchedAll;
         int processedTasks = 0;
         do {
@@ -396,6 +408,8 @@ public class SingleThreadEventExecutor extends AbstractScheduledEventExecutor im
 
     /**
      * Returns the amount of time left until the scheduled task with the closest dead line is executed.
+     *
+     * This method must be called from the {@link EventExecutor} thread.
      */
     protected final long delayNanos(long currentTimeNanos) {
         RunnableScheduledFuture<?> scheduledTask = peekScheduledTask();
@@ -409,8 +423,11 @@ public class SingleThreadEventExecutor extends AbstractScheduledEventExecutor im
     /**
      * Returns the absolute point in time (relative to {@link #nanoTime()}) at which the the next
      * closest scheduled task should run.
+     *
+     * This method must be called from the {@link EventExecutor} thread.
      */
     protected final long deadlineNanos() {
+        assert inEventLoop();
         RunnableScheduledFuture<?> scheduledTask = peekScheduledTask();
         if (scheduledTask == null) {
             return nanoTime() + SCHEDULE_PURGE_INTERVAL;
@@ -424,8 +441,11 @@ public class SingleThreadEventExecutor extends AbstractScheduledEventExecutor im
      * usually no need to call this method.  However, if you take the tasks manually using {@link #takeTask()} or
      * {@link #pollTask()}, you have to call this method at the end of task execution loop for accurate quiet period
      * checks.
+     *
+     * This method must be called from the {@link EventExecutor} thread.
      */
     protected final void updateLastExecutionTime() {
+        assert inEventLoop();
         lastExecutionTime = nanoTime();
     }
 
@@ -434,8 +454,11 @@ public class SingleThreadEventExecutor extends AbstractScheduledEventExecutor im
      * The implementation depends on the fact that {@link #newTaskQueue(int)} returns a
      * {@link BlockingQueue}. If you change this by overriding {@link #newTaskQueue(int)}
      * be aware that you also need to override {@link #run()}.
+     *
+     * This method must be called from the {@link EventExecutor} thread.
      */
     protected void run() {
+        assert inEventLoop();
         do {
             Runnable task = takeTask();
             if (task != null) {
@@ -446,10 +469,11 @@ public class SingleThreadEventExecutor extends AbstractScheduledEventExecutor im
     }
 
     /**
-     * Do nothing, sub-classes may override
+     * Do nothing, sub-classes may override.
      */
     protected void cleanup() {
         // NOOP
+        assert inEventLoop();
     }
 
     protected void wakeup(boolean inEventLoop) {
@@ -668,12 +692,11 @@ public class SingleThreadEventExecutor extends AbstractScheduledEventExecutor im
 
     /**
      * Confirm that the shutdown if the instance should be done now!
+     *
+     * This method must be called from the {@link EventExecutor} thread.
      */
     protected final boolean confirmShutdown() {
-        if (!inEventLoop()) {
-            throw new IllegalStateException("must be invoked from an event loop");
-        }
-
+        assert inEventLoop();
         if (!isShuttingDown()) {
             return false;
         }
@@ -808,7 +831,7 @@ public class SingleThreadEventExecutor extends AbstractScheduledEventExecutor im
 
     /**
      * Returns the {@link ThreadProperties} of the {@link Thread} that powers the {@link SingleThreadEventExecutor}.
-     * If the {@link SingleThreadEventExecutor} is not started yet, this operation will start it and block until the
+     * If the {@link SingleThreadEventExecutor} is not started yet, this operation will start it and block until
      * it is fully started.
      */
     public final ThreadProperties threadProperties() {
@@ -831,6 +854,10 @@ public class SingleThreadEventExecutor extends AbstractScheduledEventExecutor im
         return threadProperties;
     }
 
+    /**
+     * Returns {@code true} if {@link #wakeup(boolean)} should be called for this {@link Runnable}, {@code false}
+     * otherwise.
+     */
     protected boolean wakesUpForTask(@SuppressWarnings("unused") Runnable task) {
         return true;
     }
