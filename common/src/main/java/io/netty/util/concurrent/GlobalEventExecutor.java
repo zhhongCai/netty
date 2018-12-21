@@ -261,9 +261,9 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
                     }
                 }
 
-                Queue<RunnableScheduledFutureNode<?>> scheduledTaskQueue = GlobalEventExecutor.this.scheduledTaskQueue;
+                Queue<RunnableScheduledFutureNode<?>> scheduledTaskQueue = scheduledTaskQueue();
                 // Terminate if there is no task in the queue (except the noop task).
-                if (taskQueue.isEmpty() && (scheduledTaskQueue == null || scheduledTaskQueue.size() == 1)) {
+                if (taskQueue.isEmpty() && scheduledTaskQueue.size() <= 1) {
                     // Mark the current thread as stopped.
                     // The following CAS must always success and must be uncontended,
                     // because only one thread should be running at the same time.
@@ -271,7 +271,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
                     assert stopped;
 
                     // Check if there are pending entries added by execute() or schedule*() while we do CAS above.
-                    if (taskQueue.isEmpty() && (scheduledTaskQueue == null || scheduledTaskQueue.size() == 1)) {
+                    if (taskQueue.isEmpty() && scheduledTaskQueue.size() <= 1) {
                         // A) No new task was added and thus there's nothing to handle
                         //    -> safe to terminate because there's nothing left to do
                         // B) A new thread started and handled all the new tasks.

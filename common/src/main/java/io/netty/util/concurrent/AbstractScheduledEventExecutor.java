@@ -35,16 +35,6 @@ import java.util.concurrent.TimeoutException;
 public abstract class AbstractScheduledEventExecutor extends AbstractEventExecutor {
     static final long START_TIME = System.nanoTime();
 
-    public static long nanoTime() {
-        return System.nanoTime() - START_TIME;
-    }
-
-    static long deadlineNanos(long delay) {
-        long deadlineNanos = nanoTime() + delay;
-        // Guard against overflow
-        return deadlineNanos < 0 ? Long.MAX_VALUE : deadlineNanos;
-    }
-
     private static final Comparator<RunnableScheduledFutureNode<?>> SCHEDULED_FUTURE_TASK_COMPARATOR =
             new Comparator<RunnableScheduledFutureNode<?>>() {
                 @Override
@@ -53,13 +43,30 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
                 }
             };
 
-    PriorityQueue<RunnableScheduledFutureNode<?>> scheduledTaskQueue;
+    private PriorityQueue<RunnableScheduledFutureNode<?>> scheduledTaskQueue;
 
     protected AbstractScheduledEventExecutor() {
     }
 
     protected AbstractScheduledEventExecutor(EventExecutorGroup parent) {
         super(parent);
+    }
+
+    /**
+     * The time elapsed since initialization of this class in nanoseconds. This may return a negative number just like
+     * {@link System#nanoTime()}.
+     */
+    public static long nanoTime() {
+        return System.nanoTime() - START_TIME;
+    }
+
+    /**
+     * The deadline (in nanoseconds) for a given delay (in nanoseconds).
+     */
+    static long deadlineNanos(long delay) {
+        long deadlineNanos = nanoTime() + delay;
+        // Guard against overflow
+        return deadlineNanos < 0 ? Long.MAX_VALUE : deadlineNanos;
     }
 
     PriorityQueue<RunnableScheduledFutureNode<?>> scheduledTaskQueue() {
@@ -92,7 +99,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
                 scheduledTaskQueue.toArray(new RunnableScheduledFutureNode<?>[0]);
 
         for (RunnableScheduledFutureNode<?> task: scheduledTasks) {
-            task.cancelWithoutRemove(false);
+            task.cancel(false);
         }
 
         scheduledTaskQueue.clearIgnoringIndexes();
@@ -284,9 +291,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
         return newRunnableScheduledFuture(this, this.<V>newPromise(), callable, deadlineNanos, period);
     }
 
-    interface RunnableScheduledFutureNode<V> extends PriorityQueueNode, RunnableScheduledFuture<V> {
-        void cancelWithoutRemove(boolean mayInterruptIfRunning);
-    }
+    interface RunnableScheduledFutureNode<V> extends PriorityQueueNode, RunnableScheduledFuture<V> { }
 
     private static final class DefaultRunnableScheduledFutureNode<V> implements RunnableScheduledFutureNode<V> {
         private final RunnableScheduledFuture<V> future;
@@ -342,10 +347,6 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
         @Override
         public boolean isPeriodic() {
             return future.isPeriodic();
-        }
-
-        public void cancelWithoutRemove(boolean mayInterruptIfRunning) {
-            future.cancel(mayInterruptIfRunning);
         }
 
         @Override

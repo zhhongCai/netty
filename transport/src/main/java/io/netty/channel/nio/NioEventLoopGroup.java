@@ -82,7 +82,7 @@ public class NioEventLoopGroup extends MultithreadEventLoopGroup {
                              final SelectStrategyFactory selectStrategyFactory,
                              int maxTasks,
                              final RejectedExecutionHandler rejectedExecutionHandler) {
-        super(nThreads, executor, maxTasks,
-                rejectedExecutionHandler, NioHandler.newFactory(selectorProvider, selectStrategyFactory));
+        super(nThreads, executor, NioHandler.newFactory(selectorProvider, selectStrategyFactory), maxTasks,
+                rejectedExecutionHandler);
     }
 }

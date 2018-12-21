@@ -17,7 +17,7 @@ package io.netty.util.concurrent;
 
 import io.netty.util.internal.EmptyArrays;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * {@link EventExecutorGroup} implementations that handles their tasks with multiple threads at
+ * {@link EventExecutorGroup} implementation that handles their tasks with multiple threads at
  * the same time.
  */
 public class MultithreadEventExecutorGroup extends AbstractEventExecutorGroup {
@@ -45,25 +45,25 @@ public class MultithreadEventExecutorGroup extends AbstractEventExecutorGroup {
      */
     public MultithreadEventExecutorGroup(int nThreads, ThreadFactory threadFactory) {
         this(nThreads, threadFactory, SingleThreadEventExecutor.DEFAULT_MAX_PENDING_EXECUTOR_TASKS,
-                RejectedExecutionHandlers.reject(), EmptyArrays.EMPTY_OBJECTS);
+                RejectedExecutionHandlers.reject());
     }
 
     /**
      * Create a new instance.
      *
      * @param nThreads          the number of threads that will be used by this instance.
-     * @param executor          the Executor to use, or {@code null} if the default should be used.
+     * @param executor          the {@link Executor} to use, or {@code null} if the default should be used.
      */
     public MultithreadEventExecutorGroup(int nThreads, Executor executor) {
         this(nThreads, executor, SingleThreadEventExecutor.DEFAULT_MAX_PENDING_EXECUTOR_TASKS,
-                RejectedExecutionHandlers.reject(), EmptyArrays.EMPTY_OBJECTS);
+                RejectedExecutionHandlers.reject());
     }
 
     /**
      * Create a new instance.
      *
      * @param nThreads          the number of threads that will be used by this instance.
-     * @param threadFactory     the ThreadFactory to use, or {@code null} if the default should be used.
+     * @param threadFactory     the {@link ThreadFactory} to use, or {@code null} if the default should be used.
      * @param maxPendingTasks   the maximum number of pending tasks before new tasks will be rejected.
      * @param rejectedHandler   the {@link RejectedExecutionHandler} to use.
      */
@@ -112,7 +112,7 @@ public class MultithreadEventExecutorGroup extends AbstractEventExecutorGroup {
      * RejectedExecutionHandler, Object...)} call
      */
     protected MultithreadEventExecutorGroup(int nThreads, Executor executor, int maxPendingTasks,
-                                            RejectedExecutionHandler rejectedHandler,  Object... args) {
+                                            RejectedExecutionHandler rejectedHandler, Object... args) {
         if (nThreads <= 0) {
             throw new IllegalArgumentException(String.format("nThreads: %d (expected: > 0)", nThreads));
         }
@@ -165,18 +165,21 @@ public class MultithreadEventExecutorGroup extends AbstractEventExecutorGroup {
         for (EventExecutor e: children) {
             e.terminationFuture().addListener(terminationListener);
         }
-
-        List<EventExecutor> childrenList = new ArrayList<EventExecutor>(children.length);
-        Collections.addAll(childrenList, children);
-        readonlyChildren = Collections.unmodifiableList(childrenList);
+        readonlyChildren = Collections.unmodifiableList(Arrays.asList(children));
     }
 
+    /**
+     * The {@link ThreadFactory} to use if no {@link ThreadFactory} and no {@link Executor} was specified.
+     */
     protected ThreadFactory newDefaultThreadFactory() {
         return new DefaultThreadFactory(getClass());
     }
 
     private final AtomicInteger idx = new AtomicInteger();
 
+    /**
+     * The {@link EventExecutor}s that are used by this {@link MultithreadEventExecutorGroup}.
+     */
     protected final List<EventExecutor> executors() {
         return readonlyChildren;
     }
@@ -199,7 +202,7 @@ public class MultithreadEventExecutorGroup extends AbstractEventExecutorGroup {
 
     @Override
     public Iterator<EventExecutor> iterator() {
-        return readonlyChildren.iterator();
+        return executors().iterator();
     }
 
     /**
@@ -213,11 +216,10 @@ public class MultithreadEventExecutorGroup extends AbstractEventExecutorGroup {
     /**
      * Create a new EventExecutor which will later then accessible via the {@link #next()}  method. This method will be
      * called for each thread that will serve this {@link MultithreadEventExecutorGroup}.
-     *
      */
     protected EventExecutor newChild(Executor executor,  int maxPendingTasks,
                                      RejectedExecutionHandler rejectedExecutionHandler,
-                                     Object... args) throws Exception {
+                                     Object... args) {
         assert args.length == 0;
         return new SingleThreadEventExecutor(this, executor, maxPendingTasks, rejectedExecutionHandler);
     }

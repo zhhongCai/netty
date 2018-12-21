@@ -251,11 +251,6 @@ final class RunnableScheduledFutureAdapter<V> implements RunnableScheduledFuture
     }
 
     @Override
-    public void cancelWithoutRemove(boolean mayInterruptIfRunning) {
-        promise.cancel(mayInterruptIfRunning);
-    }
-
-    @Override
     public int priorityQueueIndex(DefaultPriorityQueue<?> queue) {
         return queueIndex;
     }

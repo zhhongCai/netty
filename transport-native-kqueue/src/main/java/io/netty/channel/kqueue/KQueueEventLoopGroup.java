@@ -109,7 +109,7 @@ public final class KQueueEventLoopGroup extends MultithreadEventLoopGroup {
                                SelectStrategyFactory selectStrategyFactory,
                                int maxTasks,
                                RejectedExecutionHandler rejectedExecutionHandler) {
-        super(nThreads, executor, maxTasks, rejectedExecutionHandler,
-                KQueueHandler.newFactory(0, selectStrategyFactory));
+        super(nThreads, executor, KQueueHandler.newFactory(0, selectStrategyFactory),
+                maxTasks, rejectedExecutionHandler);
     }
 }

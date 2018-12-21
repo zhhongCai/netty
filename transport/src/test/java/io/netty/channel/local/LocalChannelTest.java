@@ -230,8 +230,7 @@ public class LocalChannelTest {
         final EventLoopGroup clientGroup = new LocalEventLoopGroup(1) {
             @Override
             protected EventExecutor newChild(Executor executor, int maxPendingTasks,
-                                             RejectedExecutionHandler rejectedExecutionHandler, Object... args)
-                    throws Exception {
+                                             RejectedExecutionHandler rejectedExecutionHandler, Object... args) {
                 return new LocalEventLoop(this, executor, maxPendingTasks, rejectedExecutionHandler) {
                     @Override
                     protected void run() {

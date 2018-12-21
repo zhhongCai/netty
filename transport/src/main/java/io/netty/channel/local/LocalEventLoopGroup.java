@@ -106,7 +106,7 @@ public class LocalEventLoopGroup extends MultithreadEventExecutorGroup implement
     @Override
     protected EventExecutor newChild(Executor executor, int maxPendingTasks,
                                      RejectedExecutionHandler rejectedExecutionHandler,
-                                     Object... args) throws Exception {
+                                     Object... args) {
         assert args.length == 0;
         return new LocalEventLoop(this, executor, maxPendingTasks, rejectedExecutionHandler);
     }
