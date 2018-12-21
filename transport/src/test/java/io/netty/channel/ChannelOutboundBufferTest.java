@@ -141,8 +141,8 @@ public class ChannelOutboundBufferTest {
             super(null, new SingleThreadEventLoop(null, Executors.defaultThreadFactory(),
                     new SingleThreadEventLoop.IoHandler() {
                 @Override
-                public void run(SingleThreadEventLoop.ExecutionContext runner) {
-                    // NOOP
+                public int run(SingleThreadEventLoop.ExecutionContext runner) {
+                    return 0;
                 }
 
                 @Override
@@ -156,12 +156,12 @@ public class ChannelOutboundBufferTest {
                 }
 
                 @Override
-                public void register(Channel channel) throws Exception {
+                public void register(Channel channel) {
                     // NOOP
                 }
 
                 @Override
-                public void deregister(Channel channel) throws Exception {
+                public void deregister(Channel channel) {
                     // NOOP
                 }
             }));

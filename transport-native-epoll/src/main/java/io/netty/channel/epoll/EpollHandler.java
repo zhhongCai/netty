@@ -295,12 +295,13 @@ public class EpollHandler implements SingleThreadEventLoop.IoHandler {
     }
 
     @Override
-    public final void run(SingleThreadEventLoop.ExecutionContext context) {
+    public final int run(SingleThreadEventLoop.ExecutionContext context) {
+        int handled = 0;
         try {
             int strategy = selectStrategy.calculateStrategy(selectNowSupplier, context.isTaskReady());
             switch (strategy) {
                 case SelectStrategy.CONTINUE:
-                    return;
+                    return 0 ;
 
                 case SelectStrategy.BUSY_WAIT:
                     strategy = epollBusyWait();
@@ -344,6 +345,7 @@ public class EpollHandler implements SingleThreadEventLoop.IoHandler {
                 default:
             }
             if (strategy > 0) {
+                handled = strategy;
                 processReady(events, strategy);
             }
             if (allowGrowing && strategy == events.length()) {
@@ -361,6 +363,7 @@ public class EpollHandler implements SingleThreadEventLoop.IoHandler {
         } catch (Throwable t) {
             handleLoopException(t);
         }
+        return handled;
     }
 
     /**

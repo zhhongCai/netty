@@ -242,12 +242,13 @@ public final class KQueueHandler implements SingleThreadEventLoop.IoHandler {
     }
 
     @Override
-    public void run(SingleThreadEventLoop.ExecutionContext context) {
+    public int run(SingleThreadEventLoop.ExecutionContext context) {
+        int handled = 0;
         try {
             int strategy = selectStrategy.calculateStrategy(selectNowSupplier, context.isTaskReady());
             switch (strategy) {
                 case SelectStrategy.CONTINUE:
-                    return;
+                    return 0;
 
                 case SelectStrategy.BUSY_WAIT:
                     // fall-through to SELECT since the busy-wait is not supported with kqueue
@@ -291,6 +292,7 @@ public final class KQueueHandler implements SingleThreadEventLoop.IoHandler {
             }
 
             if (strategy > 0) {
+                handled = strategy;
                 processReady(strategy);
             }
             if (allowGrowing && strategy == eventList.capacity()) {
@@ -308,6 +310,7 @@ public final class KQueueHandler implements SingleThreadEventLoop.IoHandler {
         } catch (Throwable t) {
             handleLoopException(t);
         }
+        return handled;
     }
 
     @Override

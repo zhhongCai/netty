@@ -419,12 +419,13 @@ public final class NioHandler implements SingleThreadEventLoop.IoHandler {
     }
 
     @Override
-    public void run(SingleThreadEventLoop.ExecutionContext runner) {
+    public int run(SingleThreadEventLoop.ExecutionContext runner) {
+        int handled = 0;
         try {
             try {
                 switch (selectStrategy.calculateStrategy(selectNowSupplier, runner.isTaskReady())) {
                     case SelectStrategy.CONTINUE:
-                        return;
+                        return 0;
 
                     case SelectStrategy.BUSY_WAIT:
                         // fall-through to SELECT since the busy-wait is not supported with NIO
@@ -471,12 +472,12 @@ public final class NioHandler implements SingleThreadEventLoop.IoHandler {
                 // the selector and retry. https://github.com/netty/netty/issues/8566
                 rebuildSelector();
                 handleLoopException(e);
-                return;
+                return 0;
             }
 
             cancelledKeys = 0;
             needsToSelectAgain = false;
-            processSelectedKeys();
+            handled = processSelectedKeys();
         } catch (Throwable t) {
             handleLoopException(t);
         }
@@ -488,6 +489,7 @@ public final class NioHandler implements SingleThreadEventLoop.IoHandler {
         } catch (Throwable t) {
             handleLoopException(t);
         }
+        return handled;
     }
 
     private static void handleLoopException(Throwable t) {
@@ -502,11 +504,11 @@ public final class NioHandler implements SingleThreadEventLoop.IoHandler {
         }
     }
 
-    private void processSelectedKeys() {
+    private int processSelectedKeys() {
         if (selectedKeys != null) {
-            processSelectedKeysOptimized();
+            return processSelectedKeysOptimized();
         } else {
-            processSelectedKeysPlain(selector.selectedKeys());
+            return processSelectedKeysPlain(selector.selectedKeys());
         }
     }
 
@@ -528,27 +530,22 @@ public final class NioHandler implements SingleThreadEventLoop.IoHandler {
         }
     }
 
-    private void processSelectedKeysPlain(Set<SelectionKey> selectedKeys) {
+    private int processSelectedKeysPlain(Set<SelectionKey> selectedKeys) {
         // check if the set is empty and if so just return to not create garbage by
         // creating a new Iterator every time even if there is nothing to process.
         // See https://github.com/netty/netty/issues/597
         if (selectedKeys.isEmpty()) {
-            return;
+            return 0;
         }
 
         Iterator<SelectionKey> i = selectedKeys.iterator();
+        int handled = 0;
         for (;;) {
             final SelectionKey k = i.next();
-            final Object a = k.attachment();
             i.remove();
 
-            if (a instanceof AbstractNioChannel) {
-                processSelectedKey(k, (AbstractNioChannel) a);
-            } else {
-                @SuppressWarnings("unchecked")
-                NioTask<SelectableChannel> task = (NioTask<SelectableChannel>) a;
-                processSelectedKey(k, task);
-            }
+            processSelectedKey(k);
+            ++handled;
 
             if (!i.hasNext()) {
                 break;
@@ -566,24 +563,19 @@ public final class NioHandler implements SingleThreadEventLoop.IoHandler {
                 }
             }
         }
+        return handled;
     }
 
-    private void processSelectedKeysOptimized() {
+    private int processSelectedKeysOptimized() {
+        int handled = 0;
         for (int i = 0; i < selectedKeys.size; ++i) {
             final SelectionKey k = selectedKeys.keys[i];
             // null out entry in the array to allow to have it GC'ed once the Channel close
             // See https://github.com/netty/netty/issues/2363
             selectedKeys.keys[i] = null;
 
-            final Object a = k.attachment();
-
-            if (a instanceof AbstractNioChannel) {
-                processSelectedKey(k, (AbstractNioChannel) a);
-            } else {
-                @SuppressWarnings("unchecked")
-                NioTask<SelectableChannel> task = (NioTask<SelectableChannel>) a;
-                processSelectedKey(k, task);
-            }
+            processSelectedKey(k);
+            ++handled;
 
             if (needsToSelectAgain) {
                 // null out entries in the array to allow to have it GC'ed once the Channel close
@@ -593,6 +585,19 @@ public final class NioHandler implements SingleThreadEventLoop.IoHandler {
                 selectAgain();
                 i = -1;
             }
+        }
+        return handled;
+    }
+
+    private void processSelectedKey(SelectionKey k) {
+        final Object a = k.attachment();
+
+        if (a instanceof AbstractNioChannel) {
+            processSelectedKey(k, (AbstractNioChannel) a);
+        } else {
+            @SuppressWarnings("unchecked")
+            NioTask<SelectableChannel> task = (NioTask<SelectableChannel>) a;
+            processSelectedKey(k, task);
         }
     }
 

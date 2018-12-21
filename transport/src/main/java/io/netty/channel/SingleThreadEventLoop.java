@@ -143,9 +143,9 @@ public class SingleThreadEventLoop extends SingleThreadEventExecutor implements 
         } while (!confirmShutdown());
     }
 
-    protected void runIo() {
+    protected int runIo() {
         assert inEventLoop();
-        ioHandler.run(context);
+        return ioHandler.run(context);
     }
 
     @Override
@@ -209,8 +209,10 @@ public class SingleThreadEventLoop extends SingleThreadEventExecutor implements 
          * to ensure we not execute too long and so block the processing of other task that are
          * scheduled on the {@link EventLoop}. This is done by taking {@link ExecutionContext#delayNanos(long)} or
          * {@link ExecutionContext#deadlineNanos()} into account.
+         *
+         * @returns the number of {@link Channel} for which I/O was handled.
          */
-        void run(ExecutionContext runner);
+        int run(ExecutionContext runner);
 
         /**
          * Wakeup the {@link IoHandler}, which means if any operation blocks it should be unblocked and
@@ -234,9 +236,9 @@ public class SingleThreadEventLoop extends SingleThreadEventExecutor implements 
         }
 
         @Override
-        public void run(ExecutionContext runner) {
+        public int run(ExecutionContext runner) {
             assert inEventLoop();
-            ioHandler.run(runner);
+            return ioHandler.run(runner);
         }
 
         @Override
