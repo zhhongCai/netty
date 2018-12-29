@@ -213,6 +213,74 @@ import java.util.NoSuchElementException;
  * For example, you can insert an encryption handler when sensitive information is about to be exchanged, and remove it
  * after the exchange.
  */
+
+/**
+ * 一个处理或拦截channel输入事件和输出操作的ChannelHandler链表(DefaultChannelPipeline中双向链表)，使用了高级拦截器模式.
+ *
+ * pipeline的创建：创建channel时自动创建
+ *
+ * 在一个pipeline中事件是如何流转的： 见上图
+ *
+ * 一个输inbound event由inbound handlers处理，按自底向上方向. If an inbound event goes beyond the top inbound handler, it is discarded
+ * silently, or logged if it needs your attention.
+ *
+ * 一个输outbound event由outbound handlers处理，按自顶向下方向
+ *
+ * 事件流转实例：
+ *
+ * 创建pipeline(DefaultChannelPipeline),设置handler:
+ *
+ * p.addLast("1", new InboundHandlerA());
+ * p.addLast("2", new InboundHandlerB());
+ * p.addLast("3", new OutboundHandlerA());
+ * p.addLast("4", new OutboundHandlerB());
+ * p.addLast("5", new InboundOutboundHandlerX());
+ *
+ * 设置之后handler链表：
+ * p.head = HeadContext
+ * HeadContext --> InboundHandlerA--> InboundHandlerB -> OutboundHandlerA --> OutboundHandlerB --> InboundOutboundHandlerX --> TailContext
+ * p.tail = TailContext;
+ *
+ * inbound event 顺序 自底向上：InboundHandlerA --> InboundHandlerB --> InboundOutboundHandlerX
+ * outbound event 顺序 自顶向下： InboundOutboundHandlerX --> OutboundHandlerB --> OutboundHandlerA
+ *
+ * 事件传播到下个handler:
+ * Inbound event propagation methods:
+ *
+ * ChannelHandlerContext.fireChannelRegistered()
+ * ChannelHandlerContext.fireChannelActive()
+ * ChannelHandlerContext.fireChannelRead(Object)
+ * ChannelHandlerContext.fireChannelReadComplete()
+ * ChannelHandlerContext.fireExceptionCaught(Throwable)
+ * ChannelHandlerContext.fireUserEventTriggered(Object)
+ * ChannelHandlerContext.fireChannelWritabilityChanged()
+ * ChannelHandlerContext.fireChannelInactive()
+ * ChannelHandlerContext.fireChannelUnregistered()
+ *
+ * Outbound event propagation methods:
+ *
+ * ChannelHandlerContext.bind(SocketAddress, ChannelPromise)
+ * ChannelHandlerContext.connect(SocketAddress, SocketAddress, ChannelPromise)
+ * ChannelHandlerContext.write(Object, ChannelPromise)
+ * ChannelHandlerContext.flush()
+ * ChannelHandlerContext.read()
+ * ChannelHandlerContext.disconnect(ChannelPromise)
+ * ChannelHandlerContext.close(ChannelPromise)
+ * ChannelHandlerContext.deregister(ChannelPromise)
+ *
+ * 构建一个pipeline
+ * static final EventExecutorGroup group = new DefaultEventExecutorGroup(16);
+ * ...
+ * ChannelPipeline pipeline = ch.pipeline();
+ * pipeline.addLast("decoder", new MyProtocolDecoder());
+ * pipeline.addLast("encoder", new MyProtocolEncoder());
+ * //如果业务允许异步，耗时的操作另起线程执行
+ * pipeline.addLast(group, "handler", new MyBusinessLogicHandler());
+ *
+ * 线程安全性
+ *
+ * ChannelPipeline是线程安全的，任何时候都可以添加/删除ChannelHandler
+ */
 public interface ChannelPipeline
         extends ChannelInboundInvoker, ChannelOutboundInvoker, Iterable<Entry<String, ChannelHandler>> {
 
