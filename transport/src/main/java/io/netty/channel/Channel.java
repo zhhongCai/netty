@@ -74,6 +74,26 @@ import java.net.SocketAddress;
  * resources once you are done with the {@link Channel}. This ensures all resources are
  * released in a proper way, i.e. filehandles.
  */
+/**
+ * 与网络套接字或能够进行 I/O操作 (如读取、写入、连接和绑定) 的组件的连接。
+
+ * 一个channel提供给用户下列信息:
+
+ * 当前状态(例如，已打开or已连接)
+ * 配置信息(ChannelConfig)
+ * 支持的I/O操作: 读、写、连接、绑定
+ * 与channel关联的处理所有I/O事件和请求的ChannelPipeline
+
+ * 所有I/O操作都是异步的： netty中所有I/O操作都是异步的.
+
+ * Channels是层次结构的
+
+ * 向下转换以访问特定传输的操作
+
+ * 释放资源: call close() or close(ChannelPromise)
+ *
+ * 服务端/客户端Channel何时如何创建?
+ */
 public interface Channel extends AttributeMap, ChannelOutboundInvoker, Comparable<Channel> {
 
     /**
