@@ -238,7 +238,7 @@ import java.util.NoSuchElementException;
  *
  * 设置之后handler链表：
  * p.head = HeadContext
- * HeadContext --> InboundHandlerA--> InboundHandlerB -> OutboundHandlerA --> OutboundHandlerB --> InboundOutboundHandlerX --> TailContext
+ * HeadContext <--> InboundHandlerA <==> InboundHandlerB <==> OutboundHandlerA <==> OutboundHandlerB <==> InboundOutboundHandlerX <==> TailContext
  * p.tail = TailContext;
  *
  * inbound event 顺序 自底向上：InboundHandlerA --> InboundHandlerB --> InboundOutboundHandlerX

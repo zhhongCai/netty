@@ -50,6 +50,10 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @param <C>   A sub-type of {@link Channel}
  */
+
+/**
+ * 一个特殊的ChannelInboundHandler
+ */
 @Sharable
 public abstract class ChannelInitializer<C extends Channel> extends ChannelInboundHandlerAdapter {
 
